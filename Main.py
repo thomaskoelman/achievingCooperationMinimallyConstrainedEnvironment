@@ -3,6 +3,7 @@ import numpy as np
 import math
 from nashpy import Game
 import random
+from typing import Callable
 
 def cooperative_agent_algorithm(nb_moves):
    matrix_maker = MatrixGenerator(nb_moves)
@@ -26,13 +27,31 @@ def cooperative_agent_algorithm(nb_moves):
       def choose_nash(game: Game):
          return game.lemke_howson(initial_dropped_label=label)
       particles.append((p_att, p_bel, choose_nash))
+   weights = [1/n] * n
 
-   gen = MatrixGenerator(nb_moves)
-   A, B = gen.random_matrix()
-   game = modify_game(Game(A, B), 0.5)
-   get_nash = particles[0][2]
-   print(get_nash)
-   print(get_nash(game))
+   A, B = matrix_maker.random_matrix()
+   game = Game(A, B)
+
+   att_opp = estimate_opponents_attitude(particles)
+   bel_opp = estimate_opponents_belief(particles)
+   nash_opp = estimate_opponents_method(weights, particles)
+
+   att_agent = get_agent_attitude(att_opp, r)
+
+   modded_game = modify_game(game, att_agent, att_opp)
+
+   ne = nash_opp(modded_game)
+   ne_agent = ne[0]
+   ne_opp = ne[1]
+
+   move = pick_move(ne_agent)
+
+   # gen = MatrixGenerator(nb_moves)
+   # A, B = gen.random_matrix()
+   # game = modify_game(Game(A, B), 0.5)
+   # get_nash = particles[0][2]
+   # print(get_nash)
+   # print(get_nash(game))
 
 
 def coop(att, bel):
@@ -73,5 +92,33 @@ def modify_game(game: Game, att_agent_1, att_agent_2):
        new_B.append(new_row)
     new_B = np.array(new_B)
     return Game(new_A, new_B)
+
+def estimate_opponents_attitude(particles: list[(float, float, Callable)]) -> float:
+    n = len(particles)
+    p_atts = [particle[0] for particle in particles]
+    return sum(p_atts) / n
+
+def estimate_opponents_belief(particles: list[(float, float, Callable)]) -> float:
+    n = len(particles)
+    p_atts = [particle[1] for particle in particles]
+    return sum(p_atts) / n
+
+def estimate_opponents_method(weights: list[float], particles: list[(float, float, Callable)]):
+    index = np.argmax(np.array(weights))
+    particle = particles[index]
+    nash_opp = particle[2]
+    return nash_opp
+
+def get_agent_attitude(att_opp: float, r: float):
+    return att_opp + r
+
+def pick_move(ne_agent: list[float]) -> int:
+    rand = random.random()
+    prob = 0
+    for action, p in enumerate(ne_agent):
+        prob += p
+        if rand < prob:
+            return action
+    return -1
 
 cooperative_agent_algorithm(nb_moves=16)
