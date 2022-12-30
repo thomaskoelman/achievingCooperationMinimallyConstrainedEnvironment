@@ -44,7 +44,7 @@ def est_error(err_lvls, err_distr):
        error += lvl * err_distr[str(lvl)]
    return error
 
-def modify_game(game: Game, att_agent):
+def modify_game(game: Game, att_agent_1, att_agent_2):
     A, B = game.payoff_matrices
 
     def agent_payoff(matrix, r_action, c_action):
@@ -59,7 +59,7 @@ def modify_game(game: Game, att_agent):
        for j, val in enumerate(row):
           g_agent = agent_payoff(A, i, j)
           g_opp = opp_payoff(B, i, j)
-          new_row.append(g_agent + att_agent * g_opp)
+          new_row.append(g_agent + att_agent_1 * g_opp)
        new_A.append(new_row)
     new_A = np.array(new_A)
 
@@ -69,7 +69,7 @@ def modify_game(game: Game, att_agent):
        for j, val in enumerate(row):
           g_agent = agent_payoff(B, i, j)
           g_opp = opp_payoff(A, i, j)
-          new_row.append(g_agent + att_agent * g_opp)
+          new_row.append(g_agent + att_agent_2 * g_opp)
        new_B.append(new_row)
     new_B = np.array(new_B)
     return Game(new_A, new_B)
