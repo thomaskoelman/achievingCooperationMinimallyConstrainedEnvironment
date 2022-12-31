@@ -3,7 +3,6 @@ import numpy as np
 import math
 from nashpy import Game
 import random
-from typing import Callable
 
 def cooperative_agent_algorithm(nb_moves):
    matrix_maker = MatrixGenerator(nb_moves)
@@ -40,12 +39,23 @@ def cooperative_agent_algorithm(nb_moves):
 
    modded_game = modify_game(game, att_agent, att_opp)
 
-   ne = nash_opp(modded_game)
-   ne_agent = ne[0]
-   ne_opp = ne[1]
+   ne_agent, ne_opp = nash_opp(modded_game)
 
    move = pick_move(ne_agent)
    opp_move = pick_move(ne_opp)
+
+   #-----update model-----
+   att_agent = bel_opp
+   modded_game = modify_game(game, att_agent, att_opp)
+   ne_agent, ne_opp = nash_opp(modded_game)
+   j = ne_opp[opp_move]
+   k = coop(att_opp, bel_opp)
+   for l, lvl in enumerate(err_lvls):
+      err_distr[str(lvl)] = err_distr[str(lvl)] # * t(j, k, l)
+   normalize_dictionary(err_distr)
+   err = est_error(err_lvls, err_distr)
+   
+
 
    # gen = MatrixGenerator(nb_moves)
    # A, B = gen.random_matrix()
@@ -94,17 +104,17 @@ def modify_game(game: Game, att_agent_1, att_agent_2):
     new_B = np.array(new_B)
     return Game(new_A, new_B)
 
-def estimate_opponents_attitude(particles: list[(float, float, Callable)]) -> float:
+def estimate_opponents_attitude(particles: list) -> float:
     n = len(particles)
     p_atts = [particle[0] for particle in particles]
     return sum(p_atts) / n
 
-def estimate_opponents_belief(particles: list[(float, float, Callable)]) -> float:
+def estimate_opponents_belief(particles: list) -> float:
     n = len(particles)
     p_atts = [particle[1] for particle in particles]
     return sum(p_atts) / n
 
-def estimate_opponents_method(weights: list[float], particles: list[(float, float, Callable)]):
+def estimate_opponents_method(weights: list, particles: list):
     index = np.argmax(np.array(weights))
     particle = particles[index]
     nash_opp = particle[2]
@@ -113,7 +123,7 @@ def estimate_opponents_method(weights: list[float], particles: list[(float, floa
 def get_agent_attitude(att_opp: float, r: float):
     return att_opp + r
 
-def pick_move(ne_agent: list[float]) -> int:
+def pick_move(ne_agent: list) -> int:
     rand = random.random()
     prob = 0
     for action, p in enumerate(ne_agent):
@@ -121,5 +131,10 @@ def pick_move(ne_agent: list[float]) -> int:
         if rand < prob:
             return action
     return -1
+
+def normalize_dictionary(d):
+    factor = 1.0 / sum(d.values())
+    for k in d:
+        d[k] = d[k] * factor
 
 cooperative_agent_algorithm(nb_moves=16)
