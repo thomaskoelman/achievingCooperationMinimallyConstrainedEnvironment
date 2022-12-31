@@ -45,6 +45,7 @@ def cooperative_agent_algorithm(nb_moves):
    ne_opp = ne[1]
 
    move = pick_move(ne_agent)
+   opp_move = pick_move(ne_opp)
 
    # gen = MatrixGenerator(nb_moves)
    # A, B = gen.random_matrix()
