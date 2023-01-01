@@ -33,7 +33,7 @@ def cooperative_agent_algorithm(nb_moves):
 
    att_opp = estimate_opponents_attitude(particles)
    bel_opp = estimate_opponents_belief(particles)
-   nash_opp = estimate_opponents_method(weights, particles)
+   nash_opp = estimate_opponents_method(weights, particles) #frequency is not weights!!
 
    att_agent = get_agent_attitude(att_opp, r)
 
@@ -67,6 +67,28 @@ def cooperative_agent_algorithm(nb_moves):
 
    normalize_list(weights)
    particles = draw_particles(particles, weights)
+
+   for i, particle in enumerate(particles):
+       p_att = particle[0]
+       p_bel = particle[1]
+       p_nash = particle[2]
+       new_p_att = np.random.normal(p_att, err * f_ab)
+       new_p_bell = np.random.normal(p_bel, err * f_ab)
+       rand = np.random.random()
+       if rand < (err * f_nash):
+           nb_labels = matrix_maker.nb_lemke_howson_labels()
+           labels = range(nb_labels)
+           label = random.choice(labels)
+           def choose_nash(game: Game):
+               return game.lemke_howson(initial_dropped_label=label)
+           new_p_nash = choose_nash
+       else:
+           new_p_nash = p_nash
+
+       particles[i] = (new_p_att, new_p_bell, new_p_nash)
+
+   print(particles)
+
 
 
 
