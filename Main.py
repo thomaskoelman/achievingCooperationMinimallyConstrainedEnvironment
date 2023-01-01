@@ -45,6 +45,7 @@ def cooperative_agent_algorithm(nb_moves):
    opp_move = pick_move(ne_opp)
 
    #-----update model-----
+   #error estimate
    att_agent = bel_opp
    modded_game = modify_game(game, att_agent, att_opp)
    ne_agent, ne_opp = nash_opp(modded_game)
@@ -54,7 +55,21 @@ def cooperative_agent_algorithm(nb_moves):
       err_distr[str(lvl)] = err_distr[str(lvl)] # * t(j, k, l)
    normalize_dictionary(err_distr)
    err = est_error(err_lvls, err_distr)
-   
+
+   #---resample particles---
+   for i, particle in enumerate(particles):
+       p_att = particle[0]
+       p_bel = particle[1]
+       p_nash = particle[2]
+       modded_game = modify_game(game, p_bel, p_att)
+       _, ne_opp = p_nash(modded_game)
+       weights[i] = ne_opp[opp_move]
+
+   normalize_list(weights)
+   particles = draw_particles(particles, weights)
+
+
+
 
 
    # gen = MatrixGenerator(nb_moves)
@@ -123,18 +138,32 @@ def estimate_opponents_method(weights: list, particles: list):
 def get_agent_attitude(att_opp: float, r: float):
     return att_opp + r
 
-def pick_move(ne_agent: list) -> int:
+def pick_from_distribution(distribution: list) -> int:
     rand = random.random()
     prob = 0
-    for action, p in enumerate(ne_agent):
+    for action, p in enumerate(distribution):
         prob += p
         if rand < prob:
             return action
     return -1
 
+pick_particle = pick_from_distribution
+pick_move = pick_from_distribution
+
 def normalize_dictionary(d):
     factor = 1.0 / sum(d.values())
     for k in d:
         d[k] = d[k] * factor
+
+def normalize_list(l):
+    factor = 1.0 / sum(l)
+    for i, e in enumerate(l):
+        l[i] = e * factor
+
+def draw_particles(particles: list, weights: list):
+    n = len(particles)
+    new_particle_ids = [pick_particle(weights) for _ in range(n)]
+    new_particles = [particles[i] for i in new_particle_ids]
+    return new_particles
 
 cooperative_agent_algorithm(nb_moves=16)
